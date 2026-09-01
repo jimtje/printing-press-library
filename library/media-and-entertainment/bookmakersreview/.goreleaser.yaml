@@ -42,9 +42,9 @@ checksum:
 brews:
   - name: bookmakersreview-pp-cli
     repository:
-      owner: 
+      owner: jimtje
       name: homebrew-tap
-    homepage: "https://github.com//bookmakersreview-pp-cli"
+    homepage: "https://github.com/jimtje/bookmakersreview-pp-cli"
     description: "Every sportsbook's price, BMR's own sharp consensus, and full line history — for free, from the terminal, no API key required."
     install: |
       bin.install "bookmakersreview-pp-cli"
