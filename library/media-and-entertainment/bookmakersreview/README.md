@@ -36,7 +36,7 @@ npx -y @mvanhorn/printing-press-library install bookmakersreview --agent claude-
 If `npx` isn't available (no Node, offline), install the CLI directly via Go (requires Go 1.26.5 or newer):
 
 ```bash
-go install github.com/mvanhorn/printing-press-library/library/other/bookmakersreview/cmd/bookmakersreview-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/bookmakersreview/cmd/bookmakersreview-pp-cli@latest
 ```
 
 This installs the CLI only — no skill.
@@ -97,7 +97,7 @@ If you can't use the MCPB bundle (older Claude Desktop, unsupported platform), i
 
 
 ```bash
-go install github.com/mvanhorn/printing-press-library/library/other/bookmakersreview/cmd/bookmakersreview-pp-mcp@latest
+go install github.com/mvanhorn/printing-press-library/library/media-and-entertainment/bookmakersreview/cmd/bookmakersreview-pp-mcp@latest
 ```
 
 Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
@@ -388,6 +388,6 @@ Environment variables:
 - Run the `list` command to see available items
 
 ### API-specific
-- **A `sports list` style command returns nothing or errors** — the upstream `sports` field is a known broken federation endpoint on BMR's side; use `leagues list` instead, which carries the sport id (`spid`) per league
+- **`sports` (the raw GraphQL field, e.g. via the `graphql` passthrough command) returns nothing or errors** — the upstream top-level `sports` field is a known broken federation endpoint on BMR's side; use the `sports list` command instead, which queries the working `getSportsWithSettingsV2` field, or `leagues list`, which carries the sport id (`spid`) per league
 - **`odds value` / `arb scan` / `odds movement` report no lines/history for a market** — this CLI has no local sync step; every query hits BMR's live GraphQL feed directly. An empty result means BMR hasn't posted lines for that event/market yet (common for games several days out) or the market type doesn't apply to that sport. Confirm data exists first with `odds current --event <id> --market <id> --books <ids>` or `consensus current --event <id> --market <id>`, and try again closer to game time
 - **A query returns an empty array with no error** — double-check the numeric id you passed (event/league/market-type ids are BMR-internal integers); use the matching `list` command with `--select` to look the id up by name first

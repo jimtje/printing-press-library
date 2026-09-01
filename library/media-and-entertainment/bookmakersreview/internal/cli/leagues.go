@@ -77,7 +77,7 @@ func newLeaguesListCmd(flags *rootFlags) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:         "list",
 		Short:       "List leagues, optionally filtered by sport id",
-		Long:        "List leagues. Sport identity is resolved via each league's spid — the upstream 'sports' field is a broken federation passthrough on BookmakersReview's own backend, so there is no separate 'sports list' command.",
+		Long:        "List leagues. Filter by sport id (spid) — see 'sports list' for the sport id catalog. The upstream top-level 'sports' field is a broken federation passthrough on BookmakersReview's own backend, so 'sports list' uses getSportsWithSettingsV2 instead.",
 		Example:     "  bookmakersreview-pp-cli leagues list --sport 4 --json",
 		Annotations: map[string]string{"mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
