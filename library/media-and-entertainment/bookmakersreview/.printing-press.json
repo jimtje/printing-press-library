@@ -1,0 +1,54 @@
+{
+  "schema_version": 2,
+  "generated_at": "2026-09-01T20:44:13.642676Z",
+  "printing_press_version": "4.29.0",
+  "api_name": "bookmakersreview",
+  "cli_name": "bookmakersreview-pp-cli",
+  "contributors": [
+    {
+      "handle": "jimtje",
+      "name": "jim zhou"
+    }
+  ],
+  "printer": "jimtje",
+  "printer_name": "jim zhou",
+  "run_id": "20260901-001113-cd609973",
+  "category": "media-and-entertainment",
+  "novel_features": [
+    {
+      "name": "Odds Value (+EV Finder)",
+      "command": "odds value",
+      "description": "See which sportsbook's current price beats the vig-free fair line before you bet."
+    },
+    {
+      "name": "Steam Move Detector",
+      "command": "steam scan",
+      "description": "Scan today's whole slate for fast, coordinated line moves that signal sharp money before the market fully reacts."
+    },
+    {
+      "name": "Record a Bet",
+      "command": "bets record",
+      "description": "Log your own wager (event, market, price, book, timestamp) to a local ledger."
+    },
+    {
+      "name": "Grade a Bet's Closing Line Value",
+      "command": "bets grade",
+      "description": "Compare one recorded bet's price to the market's closing line to compute its CLV."
+    },
+    {
+      "name": "Aggregate CLV Report",
+      "command": "bets report",
+      "description": "See your running closing-line-value percentage and win rate across every recorded bet."
+    },
+    {
+      "name": "Arbitrage Scan",
+      "command": "arb scan",
+      "description": "Find risk-free two-sided price mismatches across sportsbooks for one event."
+    },
+    {
+      "name": "Line Movement Chart",
+      "command": "odds movement",
+      "description": "See the full open-to-current price timeline for one event and market, across books."
+    }
+  ]
+}

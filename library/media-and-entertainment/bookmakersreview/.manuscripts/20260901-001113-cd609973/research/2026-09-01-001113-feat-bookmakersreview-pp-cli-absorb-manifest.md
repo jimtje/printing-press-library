@@ -1,0 +1,44 @@
+# BookmakersReview CLI Absorb Manifest
+
+No existing GitHub/npm/PyPI wrapper, MCP server, or Claude plugin was found for BookmakersReview's odds API (confirmed via targeted web search). This is a GraphQL-only API (no OpenAPI spec, no generator-emitted endpoint commands) — every row below is hand-built Go against a hand-authored GraphQL client in `internal/bmr/`.
+
+## Absorbed (every resource family the schema exposes)
+| # | Feature | Best Source | Our Implementation | Added Value |
+|---|---------|-----------|-------------------|-------------|
+| 1 | League/sport reference data | `leagues`, `sportsWithLiveEvents`, `leagueHierarchy` | bookmakersreview-pp-cli leagues list | Offline cache, name search instead of memorizing numeric ids |
+| 2 | Sportsbook reference data | `sportsbooks`, `sportsbook` | bookmakersreview-pp-cli sportsbooks list | Offline cache, maps `paid` (Provider Account Id) to real book names |
+| 3 | Market type reference data | `marketTypes`, `marketTypeGroups` | bookmakersreview-pp-cli markets list | Offline cache |
+| 4 | Events / schedule lookup | `eventsByDateNew`, `upcomingEvents`, `eventsBySport` | bookmakersreview-pp-cli events list | `--json`/`--select`, SQLite sync |
+| 5 | Single event composite view | `events(eid:)` (nested lines+consensus+weather+stats) | bookmakersreview-pp-cli events get | One round trip returns lines, consensus, weather, and stats together |
+| ~~6~~ | ~~Live scores (standalone command)~~ | `scores`, `getUpdatedScores` | **Folded into row 5** — `bookmakersreview-pp-cli events get <eid>` already nests `scores { partid val pn }`, and `events history` nests the same for a date range | A standalone `scores list` would just be a thinner duplicate of the same query `events get`/`events history` already run; not shipped as a separate command per the "kill wrapper duplicates" rule applied elsewhere in this manifest |
+| 7 | Current odds by book | `currentLines` | bookmakersreview-pp-cli odds current | Structured multi-book comparison output |
+| 8 | Opening odds by book | `openingLines` | bookmakersreview-pp-cli odds opening | — |
+| 9 | Best odds across books | `bestLines`, `bestLinesV2` | bookmakersreview-pp-cli odds best | Sorted by best price, `--json` |
+| 10 | Live in-play odds | `liveLines` | bookmakersreview-pp-cli odds live | — |
+| ~~11~~ | ~~Full odds history~~ | `historyLines`, `lineHistory` | **DROPPED — confirmed broken upstream** | Both GraphQL fields crash the backend server-side ("Cannot read property 'length' of undefined") regardless of arguments tried, on both bookmakersreview.com and oddstrader.com hosts. Not shipped. `consensus history` and `odds movement` (below) cover "how did the market move" without needing per-book price history. |
+| 12 | Consensus / fair-value line | `consensus`, `consensusV2` | bookmakersreview-pp-cli consensus current | — |
+| 13 | Consensus history | `consensusHistory`, `updatedConsensus` | bookmakersreview-pp-cli consensus history | — |
+| ~~14~~ | ~~Player props~~ | `propLinesByEntry` | **DROPPED — confirmed broken upstream** | Returns `"Invalid value passed"` for every argument combination tried (real sbids, both moneyline and total market types). Not shipped. |
+| 15 | Injuries | `injuries` | bookmakersreview-pp-cli injuries list | Requires a `--season` (seid) the schema has no lookup for — documented honestly in `--help` rather than guessed |
+| 16 | Weather (outdoor sports) | `weather`, `weekWeatherForecast` | bookmakersreview-pp-cli weather get | — |
+| 17 | Team/player statistics | `statistics`, `statisticsByGroups`, `statisticsByEvent`, `statisticsBySeason`, `teamStatistics`, `statisticsBettingOddsTrends` | bookmakersreview-pp-cli stats list | Confirmed live with real data |
+| ~~18~~ | ~~Teams reference/roster~~ | `teams`, `team` | **DROPPED — confirmed broken upstream** | Every arg combination (bare, tmid, lid, act) returns `"Invalid value passed"`; `teamsByName` returns `200 OK` with `[]` for every real team name tried. Not shipped. |
+| 19 | Players reference | `players` | bookmakersreview-pp-cli players get | Confirmed live: `players` unconditionally requires `pid: [Int]!` even when `fn`/`lnam` are also supplied — a pure name-search `players list` is not possible via this API. `players get <pid>` is the only viable command; dropped the originally-planned `players list`. |
+| 20 | Historical events / results | `events(dt: {between/gte/gt/eq})` in milliseconds | bookmakersreview-pp-cli events history | Confirmed live: full results back to 2009 (eid=1), including quarter-by-quarter per-participant box scores (`scores { partid val pn }`) — distinct from `events list` (upcoming schedule) |
+
+Note: the top-level `sports` field is a broken federation passthrough (confirmed live — it unconditionally errors demanding internal `sitid`/`did` context that isn't a usable public arg). Row 1 sources sport listing through `sportsWithLiveEvents`/`leagueHierarchy`/the `spid` values embedded in `leagues` instead.
+
+Three rows (11, 14, 18) were approved in the original manifest but confirmed genuinely broken upstream during Phase 3 build — every argument combination tried (including live combinations verified via raw curl outside any generated code) returns a server-side error or crash. Per the skill's own precedent for the already-known-broken `sports` field ("do not build a command around a field confirmed non-functional"), these are dropped rather than shipped as always-failing commands. This is a scope reduction from 20 to 17 shipped absorbed rows, disclosed here for the record.
+
+## Transcendence (only possible with our approach)
+| # | Feature | Command | Buildability | Why Only We Can Do This | Long Description |
+|---|---------|---------|--------------|--------------------------|-------------------|
+| 1 | No-vig fair-value / +EV line shopping | `odds value` | hand-code | Strips vig from live consensus to compute a fair probability, then flags which book's current price beats fair value — no existing tool wraps BMR's free consensus feed this way | Use this to find whether a book's current price beats the vig-free fair line (positive EV). Do NOT use it to just find the numerically highest price across books; use `odds best` for that. |
+| 2 | Steam move detector | `steam scan` | hand-code | Requires locally synced consensus-history deltas across the whole board, computed rate-of-change per market — only possible with a local time-series the API itself doesn't compute for you | Use this to scan today's whole board for sharp/steam signals. Do NOT use it to inspect one event's full price history over time; use `odds movement` for that, or `consensus history` for raw deltas. |
+| 3 | Record a personal bet | `bets record` | hand-code | Local-only ledger of the user's own wagers; no API endpoint for this exists because it isn't BMR's data | Use this to log your own bet (event, market, price, book, timestamp) for later CLV grading. |
+| 4 | Grade a bet's closing line value | `bets grade` | hand-code | Joins the user's local bet record against a closing-price proxy — `historyLines`/`lineHistory` are confirmed broken upstream (server crash on every argument combination), so this uses `currentLines` at/after kickoff as the closing reference instead, refusing to grade before the event starts | Use `bets grade` to evaluate one recorded bet against the closing line. Do NOT use it for general historical line lookup with no personal bet attached; use `consensus history` for that. |
+| 5 | Aggregate CLV report | `bets report` | hand-code | Aggregates the local bets table into running CLV%/win-rate stats by market/book — requires the local ledger accumulated over time | Use `bets report` to see your running CLV%/win-rate across all recorded bets. |
+| 6 | Arbitrage scan | `arb scan` | hand-code | Cross-book combined-implied-probability check across both sides of a market to find guaranteed-profit spreads | Use this to find risk-free two-sided arbitrage opportunities across books. Do NOT use it to evaluate single-side value against fair odds; use `odds value` for that. |
+| 7 | Line movement chart | `odds movement` | hand-code | Renders the full open-to-current consensus timeline for one event+market from consensus history, with deltas — historyLines/lineHistory (raw per-book price history) are confirmed broken upstream, so this tracks consensus percentage movement instead | Use this to see the full open-to-current price path for one specific event+market. Do NOT use it to scan the whole day's slate for anomalous moves; use `steam scan` for that; do not use for unformatted raw snapshots; use `consensus history` for that. |
+
+Minimum 5 transcendence features required — 7 delivered, all scoring >= 5/10 (5x 10/10, 1x 7/10, 1x 5/10). Full brainstorm audit trail (customer model, pre-cut candidates, kill reasons) is in `2026-09-01-001113-novel-features-brainstorm.md`.

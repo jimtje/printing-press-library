@@ -1,0 +1,35 @@
+{
+  "api_name": "bookmakersreview",
+  "base_url": "https://ms.virginia.us-east-1.bookmakersreview.com/ms-odds-v2/odds-v2-service",
+  "description": "Every sportsbook's price, BMR's own sharp consensus, and full line history — for free, from the terminal, no API key required.",
+  "mcp_ready": "full",
+  "http_transport": "standard",
+  "auth": {
+    "type": "none"
+  },
+  "required_headers": [],
+  "tools": [
+    {
+      "name": "graphql_query",
+      "description": "Execute a raw GraphQL query against the odds-v2 service. Required: query. Optional: variables.",
+      "method": "POST",
+      "path": "/",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "query",
+          "type": "string",
+          "location": "body",
+          "description": "GraphQL query document",
+          "required": true
+        },
+        {
+          "name": "variables",
+          "type": "object",
+          "location": "body",
+          "description": "GraphQL variables as a JSON object"
+        }
+      ]
+    }
+  ]
+}

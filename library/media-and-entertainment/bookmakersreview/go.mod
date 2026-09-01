@@ -1,0 +1,33 @@
+module github.com/mvanhorn/printing-press-library/library/media-and-entertainment/bookmakersreview
+
+go 1.26.6
+
+require (
+	github.com/spf13/cobra v1.9.1
+	github.com/spf13/pflag v1.0.6
+)
+
+require (
+	github.com/mark3labs/mcp-go v0.47.0
+	modernc.org/sqlite v1.57.0
+)
+
+require (
+	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/google/jsonschema-go v0.4.2 // indirect
+	github.com/google/uuid v1.6.0 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/mattn/go-isatty v0.0.24 // indirect
+	github.com/ncruces/go-strftime v1.0.0 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/spf13/cast v1.7.1 // indirect
+	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
+	modernc.org/libc v1.74.4 // indirect
+	modernc.org/mathutil v1.7.1 // indirect
+	modernc.org/memory v1.11.0 // indirect
+)
+
+// Floor x/sys above the vulnerable v0.31.0. It is pulled only transitively
+// (modernc.org/sqlite, golang.org/x/net, ...), so MVS needs this explicit
+// floor; tidy drops it for CLIs that pull no x/sys at all.
+require golang.org/x/sys v0.47.0 // indirect

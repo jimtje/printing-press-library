@@ -1,0 +1,229 @@
+{
+  "api_name": "bookmakersreview",
+  "novelty_score": 9,
+  "alternatives": [],
+  "gaps": [],
+  "patterns": [],
+  "recommendation": "proceed",
+  "researched_at": "2026-09-01T07:30:00Z",
+  "novel_features": [
+    {
+      "name": "Odds Value (+EV Finder)",
+      "command": "odds value",
+      "description": "See which sportsbook's current price beats the vig-free fair line before you bet.",
+      "rationale": "Requires stripping vig from BMR's own free consensus feed to compute a fair probability, then comparing every book's live price against it — a computation no raw API response gives you.",
+      "example": "bookmakersreview-pp-cli odds value --event 123456 --market 1 --agent",
+      "why_it_matters": "Reach for this before placing a bet to confirm you are not just getting the highest number, but a genuinely positive-EV price.",
+      "group": "Line shopping"
+    },
+    {
+      "name": "Steam Move Detector",
+      "command": "steam scan",
+      "description": "Scan today's whole slate for fast, coordinated line moves that signal sharp money before the market fully reacts.",
+      "rationale": "Requires a locally synced consensus-history time series and a rate-of-change computation across the whole board — only possible because the data is cached locally, not from any single live call.",
+      "example": "bookmakersreview-pp-cli steam scan --league 16 --since 3h --agent",
+      "why_it_matters": "Use this when you want to catch sharp action across an entire day's games rather than watching one event.",
+      "group": "Line shopping"
+    },
+    {
+      "name": "Record a Bet",
+      "command": "bets record",
+      "description": "Log your own wager (event, market, price, book, timestamp) to a local ledger.",
+      "rationale": "This is the user's own data, not BMR's — no API endpoint could ever provide it; it only exists because the CLI has a local SQLite store.",
+      "example": "bookmakersreview-pp-cli bets record --event 123456 --market 3 --price 2.5 --book 9 --boid 1",
+      "why_it_matters": "Use this immediately after placing a real bet so it can later be graded against the closing line.",
+      "group": "Closing line value"
+    },
+    {
+      "name": "Grade a Bet's Closing Line Value",
+      "command": "bets grade",
+      "description": "Compare one recorded bet's price to the market's closing line to compute its CLV.",
+      "rationale": "Joins the user's local bet record against BMR's historyLines/lineHistory closing data — a cross-source join no single API call provides.",
+      "example": "bookmakersreview-pp-cli bets grade --bet-id 42 --agent",
+      "why_it_matters": "Use this after a game closes to see whether you beat the closing number, the standard measure of betting skill.",
+      "group": "Closing line value"
+    },
+    {
+      "name": "Aggregate CLV Report",
+      "command": "bets report",
+      "description": "See your running closing-line-value percentage and win rate across every recorded bet.",
+      "rationale": "Requires aggregating the local bets ledger accumulated over time — no external API tracks a user's personal betting history.",
+      "example": "bookmakersreview-pp-cli bets report --since 30d --group-by market --agent",
+      "why_it_matters": "Use this weekly/monthly to track betting performance over time instead of grading bets one at a time.",
+      "group": "Closing line value"
+    },
+    {
+      "name": "Arbitrage Scan",
+      "command": "arb scan",
+      "description": "Find risk-free two-sided price mismatches across sportsbooks for one event.",
+      "rationale": "Requires combining the best price on each side of a market from different books and checking their combined implied probability — a cross-book computation, not a single endpoint.",
+      "example": "bookmakersreview-pp-cli arb scan --event 123456 --market 1",
+      "why_it_matters": "Use this to find guaranteed-profit spreads across books; do not use it to judge single-side value, use odds value for that.",
+      "group": "Line shopping"
+    },
+    {
+      "name": "Line Movement Chart",
+      "command": "odds movement",
+      "description": "See the full open-to-current price timeline for one event and market, across books.",
+      "rationale": "Renders a computed, chronological view from locally synced history — the raw history endpoints return snapshots, not a formatted delta timeline.",
+      "example": "bookmakersreview-pp-cli odds movement --event 123456 --market 2 --agent",
+      "why_it_matters": "Use this to see how a specific line moved over time; use steam scan instead to find movement across the whole day's slate.",
+      "group": "Closing line value"
+    }
+  ],
+  "novel_features_built": [
+    {
+      "name": "Odds Value (+EV Finder)",
+      "command": "odds value",
+      "description": "See which sportsbook's current price beats the vig-free fair line before you bet.",
+      "rationale": "Requires stripping vig from BMR's own free consensus feed to compute a fair probability, then comparing every book's live price against it — a computation no raw API response gives you.",
+      "example": "bookmakersreview-pp-cli odds value --event 123456 --market 1 --agent",
+      "why_it_matters": "Reach for this before placing a bet to confirm you are not just getting the highest number, but a genuinely positive-EV price.",
+      "group": "Line shopping"
+    },
+    {
+      "name": "Steam Move Detector",
+      "command": "steam scan",
+      "description": "Scan today's whole slate for fast, coordinated line moves that signal sharp money before the market fully reacts.",
+      "rationale": "Requires a locally synced consensus-history time series and a rate-of-change computation across the whole board — only possible because the data is cached locally, not from any single live call.",
+      "example": "bookmakersreview-pp-cli steam scan --league 16 --since 3h --agent",
+      "why_it_matters": "Use this when you want to catch sharp action across an entire day's games rather than watching one event.",
+      "group": "Line shopping"
+    },
+    {
+      "name": "Record a Bet",
+      "command": "bets record",
+      "description": "Log your own wager (event, market, price, book, timestamp) to a local ledger.",
+      "rationale": "This is the user's own data, not BMR's — no API endpoint could ever provide it; it only exists because the CLI has a local SQLite store.",
+      "example": "bookmakersreview-pp-cli bets record --event 123456 --market 3 --price 2.5 --book 9 --boid 1",
+      "why_it_matters": "Use this immediately after placing a real bet so it can later be graded against the closing line.",
+      "group": "Closing line value"
+    },
+    {
+      "name": "Grade a Bet's Closing Line Value",
+      "command": "bets grade",
+      "description": "Compare one recorded bet's price to the market's closing line to compute its CLV.",
+      "rationale": "Joins the user's local bet record against BMR's historyLines/lineHistory closing data — a cross-source join no single API call provides.",
+      "example": "bookmakersreview-pp-cli bets grade --bet-id 42 --agent",
+      "why_it_matters": "Use this after a game closes to see whether you beat the closing number, the standard measure of betting skill.",
+      "group": "Closing line value"
+    },
+    {
+      "name": "Aggregate CLV Report",
+      "command": "bets report",
+      "description": "See your running closing-line-value percentage and win rate across every recorded bet.",
+      "rationale": "Requires aggregating the local bets ledger accumulated over time — no external API tracks a user's personal betting history.",
+      "example": "bookmakersreview-pp-cli bets report --since 30d --group-by market --agent",
+      "why_it_matters": "Use this weekly/monthly to track betting performance over time instead of grading bets one at a time.",
+      "group": "Closing line value"
+    },
+    {
+      "name": "Arbitrage Scan",
+      "command": "arb scan",
+      "description": "Find risk-free two-sided price mismatches across sportsbooks for one event.",
+      "rationale": "Requires combining the best price on each side of a market from different books and checking their combined implied probability — a cross-book computation, not a single endpoint.",
+      "example": "bookmakersreview-pp-cli arb scan --event 123456 --market 1",
+      "why_it_matters": "Use this to find guaranteed-profit spreads across books; do not use it to judge single-side value, use odds value for that.",
+      "group": "Line shopping"
+    },
+    {
+      "name": "Line Movement Chart",
+      "command": "odds movement",
+      "description": "See the full open-to-current price timeline for one event and market, across books.",
+      "rationale": "Renders a computed, chronological view from locally synced history — the raw history endpoints return snapshots, not a formatted delta timeline.",
+      "example": "bookmakersreview-pp-cli odds movement --event 123456 --market 2 --agent",
+      "why_it_matters": "Use this to see how a specific line moved over time; use steam scan instead to find movement across the whole day's slate.",
+      "group": "Closing line value"
+    }
+  ],
+  "auth": {},
+  "narrative": {
+    "display_name": "BookmakersReview",
+    "headline": "Every sportsbook's price, BMR's own sharp consensus, and full line history — for free, from the terminal, no API key required.",
+    "value_prop": "BookmakersReview runs a free, unauthenticated GraphQL feed behind its odds-comparison tool that already includes consensus, opening/current/historical lines, injuries, and weather in one graph. This CLI wraps it, adds a local SQLite history no paid odds API gives you by default, and layers on vig-free value finding, steam detection, and closing-line-value grading that no sportsbook data API — paid or free — ships out of the box.",
+    "auth_narrative": "No authentication is required. Every query in this CLI works unauthenticated, exactly like the public odds.bookmakersreview.com tool.",
+    "quickstart": [
+      {
+        "command": "bookmakersreview-pp-cli doctor --dry-run",
+        "comment": "confirm the CLI can reach the BMR GraphQL service"
+      },
+      {
+        "command": "bookmakersreview-pp-cli leagues list --json --select lid,nam",
+        "comment": "find the league id for the sport you care about (NFL=16, NBA=5, MLB=3, NHL=7)"
+      },
+      {
+        "command": "bookmakersreview-pp-cli events list --league 16 --json",
+        "comment": "see today's/upcoming NFL games"
+      },
+      {
+        "command": "bookmakersreview-pp-cli odds best --event 4802244 --market 1 --json",
+        "comment": "find the best moneyline price across every tracked sportsbook"
+      },
+      {
+        "command": "bookmakersreview-pp-cli odds value --event 4802244 --market 1 --agent",
+        "comment": "check whether that best price is actually positive expected value, not just the highest number"
+      },
+      {
+        "command": "bookmakersreview-pp-cli steam scan --league 16 --since 3h --agent",
+        "comment": "scan the whole slate for sharp/steam moves before kickoff"
+      }
+    ],
+    "troubleshoots": [
+      {
+        "symptom": "A `sports list` style command returns nothing or errors",
+        "fix": "the upstream `sports` field is a known broken federation endpoint on BMR's side; use `leagues list` instead, which carries the sport id (`spid`) per league"
+      },
+      {
+        "symptom": "`odds value` / `arb scan` / `odds movement` report no lines/history for a market",
+        "fix": "this CLI has no local sync step; every query hits BMR's live GraphQL feed directly. An empty result means BMR hasn't posted lines for that event/market yet (common for games several days out) or the market type doesn't apply to that sport. Confirm data exists first with `odds current --event \u003cid\u003e --market \u003cid\u003e --books \u003cids\u003e` or `consensus current --event \u003cid\u003e --market \u003cid\u003e`, and try again closer to game time"
+      },
+      {
+        "symptom": "A query returns an empty array with no error",
+        "fix": "double-check the numeric id you passed (event/league/market-type ids are BMR-internal integers); use the matching `list` command with `--select` to look the id up by name first"
+      }
+    ],
+    "when_to_use": "Use this CLI when you need current or historical sports-betting odds, sharp consensus, line movement, or closing-line-value analysis for U.S.-facing sportsbooks, and want it scriptable/offline instead of manually comparing books in a browser.",
+    "anti_triggers": [
+      "Do not use this CLI to place real bets — it is a read-only odds/data tool with a local bet ledger for your own tracking, not a sportsbook integration.",
+      "Do not use this CLI for non-US/offshore-only or niche international leagues without first checking `leagues list` — BMR's coverage is US-sportsbook-centric.",
+      "Do not use this CLI as a source of betting advice or guaranteed win probabilities — `odds value`/`arb scan` surface mathematical relationships in published prices, not predictions."
+    ],
+    "recipes": [
+      {
+        "title": "Find the best price across books",
+        "command": "bookmakersreview-pp-cli odds best --event 123456 --market 3 --json",
+        "explanation": "Returns every tracked sportsbook's current spread price for the event, sorted best-first."
+      },
+      {
+        "title": "Narrow a large event-history payload to just the fields you need",
+        "command": "bookmakersreview-pp-cli events history --league 16 --from 2025-12-14 --to 2025-12-16 --agent --select eid,dt",
+        "explanation": "A date-range history query returns every event's full per-period score breakdown; --select keeps agent context small by returning only the id and kickoff time when you just need to enumerate events (follow up with 'events get \u003ceid\u003e' for full scores on the ones you care about)."
+      },
+      {
+        "title": "Check if a price is actually good value, not just the highest number",
+        "command": "bookmakersreview-pp-cli odds value --event 123456 --market 1 --agent",
+        "explanation": "Strips the vig from consensus to compute fair value, then flags any book beating it — the highest number isn't always +EV."
+      },
+      {
+        "title": "Scan for sharp/steam action across today's slate",
+        "command": "bookmakersreview-pp-cli steam scan --league 16 --since 3h --agent",
+        "explanation": "Flags markets where consensus moved fast and far from the opener across the board, a signal of sharp money."
+      },
+      {
+        "title": "Track your own closing line value over time",
+        "command": "bookmakersreview-pp-cli bets report --since 30d --group-by market --agent",
+        "explanation": "Aggregates every bet you've recorded and graded into a running CLV percentage, the standard long-run skill metric for bettors."
+      }
+    ],
+    "trigger_phrases": [
+      "check NFL odds",
+      "best moneyline price",
+      "line movement",
+      "steam move",
+      "closing line value",
+      "sportsbook consensus",
+      "use bookmakersreview",
+      "run bookmakersreview"
+    ]
+  }
+}

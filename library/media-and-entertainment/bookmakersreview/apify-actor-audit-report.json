@@ -1,0 +1,9 @@
+{
+  "dir": "\u003ccli-dir\u003e/bookmakersreview-pp-cli",
+  "research_dir": "\u003ccli-dir\u003e/20260901-001113-cd609973",
+  "verdict": "pass",
+  "actors": null,
+  "issues": [
+    "no Apify actor references found, skipping"
+  ]
+}
