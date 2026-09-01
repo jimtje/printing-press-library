@@ -69,25 +69,39 @@ func stringLiteral(s string) string {
 	return strconv.Quote(s)
 }
 
+// leagueRow is the enriched leagues-list view sourced from
+// getLeaguesWithSettingsV2, which returns the full league catalog (no
+// pagination cap — confirmed live: 3002 rows) plus an abbreviation and
+// region, unlike the plain "leagues" field this replaced (capped at ~5 rows
+// regardless of the requested limit — an upstream quirk, not fixable
+// client-side).
+type leagueRow struct {
+	LID        int    `json:"lid"`
+	Name       string `json:"nam"`
+	Abbrev     string `json:"sn,omitempty"`
+	SpID       int    `json:"spid"`
+	RegionID   int    `json:"rid,omitempty"`
+	RegionName string `json:"region,omitempty"`
+}
+
 func newLeaguesListCmd(flags *rootFlags) *cobra.Command {
-	var flagSport string
-	var flagEnabled bool
+	var flagSport int
+	var flagFeaturedOnly bool
+	var flagSearch string
 	var flagLimit int
 
 	cmd := &cobra.Command{
-		Use:         "list",
-		Short:       "List leagues, optionally filtered by sport id",
-		Long:        "List leagues. Filter by sport id (spid) — see 'sports list' for the sport id catalog. The upstream top-level 'sports' field is a broken federation passthrough on BookmakersReview's own backend, so 'sports list' uses getSportsWithSettingsV2 instead.",
+		Use:   "list",
+		Short: "List leagues, optionally filtered by sport id or name",
+		Long: "List leagues via getLeaguesWithSettingsV2 — see 'sports list' for the sport id catalog. " +
+			"Note: the upstream 'enabled' field means \"featured on the site\", not \"currently active\" — most " +
+			"real, in-season leagues report enabled=false, so this command does not filter on it by default; " +
+			"pass --featured-only to restrict to the small featured subset.",
 		Example:     "  bookmakersreview-pp-cli leagues list --sport 4 --json",
 		Annotations: map[string]string{"mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if dryRunOK(flags) {
 				return nil
-			}
-			spids, err := parseIntCSV(flagSport)
-			if err != nil {
-				_ = cmd.Usage()
-				return usageErr(err)
 			}
 			c, err := newBMRClient(flags)
 			if err != nil {
@@ -96,11 +110,8 @@ func newLeaguesListCmd(flags *rootFlags) *cobra.Command {
 			ctx, cancel := boundCtx(cmd.Context(), flags)
 			defer cancel()
 
-			var result struct {
-				Leagues []bmr.League `json:"leagues"`
-			}
 			// NOTE: literal values are inlined directly into the query
-			// string rather than passed via GraphQL $variables. The outer
+			// string rather than passed via GraphQL $variables — the outer
 			// federation gateway and the inner backend service disagree on
 			// several argument types (Int vs [Int]) across this schema;
 			// named variables trigger contradictory type-check errors
@@ -108,31 +119,61 @@ func newLeaguesListCmd(flags *rootFlags) *cobra.Command {
 			// lenient enough to work. Confirmed live.
 			// spid is declared LIST/Int at the outer gateway but the real
 			// backend rejects a list literal here ("Expected type Int, found
-			// [4]") — confirmed live. Pass it as a bare scalar; only the
-			// first --sport value is honored if more than one is given,
-			// since the backend has no multi-value form for this field.
+			// [4]") — confirmed live. Pass it as a bare scalar.
 			spidArg := ""
-			if len(spids) > 0 {
-				spidArg = fmt.Sprintf(", spid: %d", spids[0])
+			if cmd.Flags().Changed("sport") {
+				spidArg = fmt.Sprintf(", spid: %d", flagSport)
 			}
-			query := fmt.Sprintf(`query { leagues(enabled: %t, limit: %d%s) { lid nam spid } }`, flagEnabled, flagLimit, spidArg)
-			if err := c.Query(ctx, query, nil, &result); err != nil {
+			enabledArg := ""
+			if flagFeaturedOnly {
+				enabledArg = ", enabled: true"
+			}
+			var raw struct {
+				Leagues []struct {
+					LID    int    `json:"lid"`
+					Name   string `json:"nam"`
+					Abbrev string `json:"sn"`
+					SpID   int    `json:"spid"`
+					RID    int    `json:"rid"`
+					Region *struct {
+						Name string `json:"nam"`
+					} `json:"region"`
+				} `json:"getLeaguesWithSettingsV2"`
+			}
+			query := fmt.Sprintf(`{getLeaguesWithSettingsV2(sitid:%d,did:%d%s%s){lid nam sn spid rid region{nam}}}`,
+				bmr.DefaultSiteID, bmr.DefaultDomainID, spidArg, enabledArg)
+			if err := c.Query(ctx, query, nil, &raw); err != nil {
 				return apiErr(err)
 			}
-			if result.Leagues == nil {
-				result.Leagues = make([]bmr.League, 0)
+
+			search := strings.ToLower(strings.TrimSpace(flagSearch))
+			results := make([]leagueRow, 0, len(raw.Leagues))
+			for _, l := range raw.Leagues {
+				if search != "" && !strings.Contains(strings.ToLower(l.Name), search) && !strings.Contains(strings.ToLower(l.Abbrev), search) {
+					continue
+				}
+				row := leagueRow{LID: l.LID, Name: l.Name, Abbrev: l.Abbrev, SpID: l.SpID, RegionID: l.RID}
+				if l.Region != nil {
+					row.RegionName = l.Region.Name
+				}
+				results = append(results, row)
+				if flagLimit > 0 && len(results) >= flagLimit {
+					break
+				}
 			}
+
 			if !wantsHumanTable(cmd.OutOrStdout(), flags) {
-				return printJSONFiltered(cmd.OutOrStdout(), result.Leagues, flags)
+				return printJSONFiltered(cmd.OutOrStdout(), results, flags)
 			}
-			for _, l := range result.Leagues {
-				cmd.Printf("%d\t%s\t(sport %d)\n", l.LID, l.Name, l.SpID)
+			for _, l := range results {
+				cmd.Printf("%d\t%s (%s)\t(sport %d, %s)\n", l.LID, l.Name, l.Abbrev, l.SpID, l.RegionName)
 			}
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&flagSport, "sport", "", "Filter by sport id(s), comma-separated (e.g. 4 for American football)")
-	cmd.Flags().BoolVar(&flagEnabled, "enabled", true, "Only include enabled leagues")
-	cmd.Flags().IntVar(&flagLimit, "limit", 200, "Maximum leagues to return (upstream may cap this lower)")
+	cmd.Flags().IntVar(&flagSport, "sport", 0, "Filter by sport id (see 'sports list')")
+	cmd.Flags().BoolVar(&flagFeaturedOnly, "featured-only", false, "Only include leagues BookmakersReview marks as featured (most real leagues are not)")
+	cmd.Flags().StringVar(&flagSearch, "search", "", "Case-insensitive substring filter on league name or abbreviation")
+	cmd.Flags().IntVar(&flagLimit, "limit", 200, "Maximum leagues to return (0 = no limit; the catalog has ~3000 entries)")
 	return cmd
 }
